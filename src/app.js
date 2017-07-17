@@ -1,50 +1,15 @@
 var CIRCLE = Math.PI * 2;
 var MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)
 
-function Controls() {
-  this.codes  = { 37: 'left', 39: 'right', 38: 'forward', 40: 'backward' };
-  this.states = { 'left': false, 'right': false, 'forward': false, 'backward': false };
-  document.addEventListener('keydown', this.onKey.bind(this, true), false);
-  document.addEventListener('keyup', this.onKey.bind(this, false), false);
-  document.addEventListener('touchstart', this.onTouch.bind(this), false);
-  document.addEventListener('touchmove', this.onTouch.bind(this), false);
-  document.addEventListener('touchend', this.onTouchEnd.bind(this), false);
-}
-
-Controls.prototype.onTouch = function(e) {
-  var t = e.touches[0];
-  this.onTouchEnd(e);
-  if (t.pageY < window.innerHeight * 0.5) this.onKey(true, { keyCode: 38 });
-  else if (t.pageX < window.innerWidth * 0.5) this.onKey(true, { keyCode: 37 });
-  else if (t.pageY > window.innerWidth * 0.5) this.onKey(true, { keyCode: 39 });
-};
-
-Controls.prototype.onTouchEnd = function(e) {
-  this.states = { 'left': false, 'right': false, 'forward': false, 'backward': false };
-  e.preventDefault();
-  e.stopPropagation();
-};
-
-Controls.prototype.onKey = function(val, e) {
-  var state = this.codes[e.keyCode];
-  if (typeof state === 'undefined') return;
-  this.states[state] = val;
-  e.preventDefault && e.preventDefault();
-  e.stopPropagation && e.stopPropagation();
-};
-
-function Bitmap(src, width, height) {
-  this.image = new Image();
-  this.image.src = src;
-  this.width = width;
-  this.height = height;
-}
+const Bitmap = require('./Bitmap.re');
+const GameLoop = require('./GameLoop.re');
+const Controls = require('./Controls.re');
 
 function Player(x, y, direction) {
   this.x = x;
   this.y = y;
   this.direction = direction;
-  this.weapon = new Bitmap('assets/knife_hand.png', 319, 320);
+  this.weapon = Bitmap.make('assets/knife_hand.png', 319, 320);
   this.paces = 0;
 }
 
@@ -70,8 +35,8 @@ Player.prototype.update = function(controls, map, seconds) {
 function GameMap(size) {
   this.size = size;
   this.wallGrid = new Uint8Array(size * size);
-  this.skybox = new Bitmap('assets/deathvalley_panorama.jpg', 2000, 750);
-  this.wallTexture = new Bitmap('assets/wall_texture.jpg', 1024, 1024);
+  this.skybox = Bitmap.make('assets/deathvalley_panorama.jpg', 2000, 750);
+  this.wallTexture = Bitmap.make('assets/wall_texture.jpg', 1024, 1024);
   this.light = 0;
 }
 
@@ -224,34 +189,15 @@ Camera.prototype.project = function(height, angle, distance) {
   };
 };
 
-function GameLoop() {
-  this.frame = this.frame.bind(this);
-  this.lastTime = 0;
-  this.callback = function() {};
-}
-
-GameLoop.prototype.start = function(callback) {
-  this.callback = callback;
-  requestAnimationFrame(this.frame);
-};
-
-GameLoop.prototype.frame = function(time) {
-  var seconds = (time - this.lastTime) / 1000;
-  this.lastTime = time;
-  if (seconds < 0.2) this.callback(seconds);
-  requestAnimationFrame(this.frame);
-};
-
 var display = document.getElementById('display');
 var player = new Player(15.3, -1.2, Math.PI * 0.3);
 var map = new GameMap(32);
-var controls = new Controls();
+var controls = Controls.make();
 var camera = new Camera(display, MOBILE ? 160 : 320, 0.8);
-var loop = new GameLoop();
 map.randomize();
 
-loop.start(function frame(seconds) {
+GameLoop.start(function frame(seconds) {
   map.update(seconds);
-  player.update(controls.states, map, seconds);
+  player.update(Controls.getStates(controls), map, seconds);
   camera.render(player, map);
 });
