@@ -1,0 +1,14 @@
+{
+  "name": "playfulreason-raycaster",
+  "sources": [
+    "src"
+  ],
+  "bs-dependencies": [
+    "bs-webapi",
+    "reason-react",
+    "bs-jest"
+  ],
+  "reason": {
+    "react-jsx": 2
+  }
+}
